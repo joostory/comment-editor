@@ -11,7 +11,9 @@
 	.comments {
 		width: 400px;
 	}
-	.comments .editor { border:1px solid #ccc; border-radius:5px; min-height:100px; padding:10px; }
+	.comments .editor { border:1px solid #ccc; border-radius:5px; min-height:100px; padding:10px; overflow:hidden;white-space: pre-wrap; word-wrap:break-word; }
+	.comments .editor ._mention { display:inline-block; padding: 0 3px; background:#eee; border:1px solid #333; border-radius:5px; }
+	.comments .editor p { margin:0;padding:0; }
 
 	.comments .mentions-input-box {
 		line-height:1.6em;
@@ -35,6 +37,14 @@
 
 	<div class="comments">
 		<textarea class="editor" name="comment">test value</textarea>
+		<button>OK</button>
+		<button>add mention</button>
+
+
+		<ul class="mentions">
+			<li data-id="1" data-name='Name1'>Name1</li>
+			<li data-id="2" data-name='Name2'>Name2</li>
+		</ul>
 	</div>
 
 	<script src='../jquery-mentions-input/lib/jquery.elastic.js' type='text/javascript'></script>
@@ -42,8 +52,21 @@
 	<script src="editor.js"></script>
 	<script>
 	(function($) {
-		$("textarea.editor").editor({
+		var editor = $("textarea.editor").editor({
 			// options
+		});
+
+		$("button").click(function(e) {
+			$(this).blur();
+			editor.addMention({id:9, name:"Test"});
+		});
+
+		$("ul.mentions>li").click(function(e) {
+			var $this = $(this);
+			var id = $this.data('id'),
+			name = $this.data('name');
+			$this.blur();
+			editor.addMention({ id: id, name: name });
 		});
 	})(jQuery);
 	</script>

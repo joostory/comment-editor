@@ -1,49 +1,24 @@
 (function($) {
 
-	function pasteHtmlAtCaret(html) {
-		var sel, range;
-		if (window.getSelection) {
-			// IE9 and non-IE
-			sel = window.getSelection();
-			if (sel.getRangeAt && sel.rangeCount) {
-				range = sel.getRangeAt(0);
-				range.deleteContents();
+	var KEY = {
+		BACKSPACE : 8,
+		DELETE: 46,
+		TAB : 9,
+		RETURN : 13,
+		ESC : 27,
+		COMMA : 188,
+		SPACE : 32,
+		PAGEUP: 33,
+		PAGEDOWN: 34,
+		END : 35,
+		HOME : 36,
+		LEFT : 37,
+		UP : 38,
+		RIGHT : 39,
+		DOWN : 40
+	}; // Keys "enum"
 
-				// Range.createContextualFragment() would be useful here but is
-				// only relatively recently standardized and is not supported in
-				// some browsers (IE9, for one)
-				var el = document.createElement("div");
-				el.innerHTML = html;
-				var frag = document.createDocumentFragment(), node, lastNode;
-				while ( (node = el.firstChild) ) {
-					lastNode = frag.appendChild(node);
-				}
-				var firstNode = frag.firstChild;
-				range.insertNode(frag);
-
-				// Preserve the selection
-				if (lastNode) {
-					range = range.cloneRange();
-					range.setStartAfter(lastNode);
-					range.collapse(true);
-					sel.removeAllRanges();
-					sel.addRange(range);
-				}
-			}
-		} else if ( (sel = document.selection) && sel.type != "Control") {
-			// IE < 9
-			var originalRange = sel.createRange();
-			originalRange.collapse(true);
-			sel.createRange().pasteHTML(html);
-			if (selectPastedContent) {
-				range = sel.createRange();
-				range.setEndPoint("StartToStart", originalRange);
-				range.select();
-			}
-		}
-	}
-
-	function getCaretPosition(editableDiv) {
+	var getCaretPosition = function(editableDiv) {
 		var caretPos = 0,
 		sel, range;
 		if (window.getSelection) {
@@ -68,20 +43,28 @@
 		return caretPos;
 	}
 
-	$('[contenteditable]').on('paste',function(e) {
-		e.preventDefault();
-
-		var text = (e.originalEvent || e).clipboardData.getData('text/plain');
-		$this = $(this);
-		pasteHtmlAtCaret(text, false);
-	});
-
+	var moveCaret = function(node, isStart){
+		var doc = document, sel, range;
+		if (window.getSelection && doc.createRange) {
+			range = doc.createRange();
+			range.selectNodeContents(node);
+			range.collapse(false);
+			sel = window.getSelection();
+			sel.removeAllRanges();
+			sel.addRange(range);
+		} else if (doc.body.createTextRange) {
+			range = doc.body.createTextRange();
+			range.moveToElementText(node);
+			range.select();
+		}
+	}
 
 	var Editor = function(field, options) {
 		var _field = $(field),
-			_options = options;
-		var _editor = $("<div contenteditable></div>"),
-			_mentions = [];
+			_options = options,
+			_editor = $("<div contenteditable></div>"),
+			_mentions = [],
+			savedRange;
 
 		var init = function() {
 			_editor.attr("class", _field.attr("class"));
@@ -89,17 +72,148 @@
 			_field.hide();
 
 			_editor.on('paste', onPaste);
-		}
+			_editor.on('keyup', onKeyUp);
+			_editor.on('keydown', onKeyDown);
+			_editor.on('blur', onBlur);
+			_editor.on('focus', onFocus);
+		};
+
+		var addMention = function(mention) {
+			_editor.focus();
+			var pos = getCaretPosition(_editor);
+			console.log("addMention", mention, pos);
+
+			document.execCommand('insertHTML', false, "<span class='_mention' data-id='" + mention.id + "'>" + mention.name + "</span> ");
+		};
 
 		// event
 		var onPaste = function(e) {
 			e.preventDefault();
 
-			var text = (e.originalEvent || e).clipboardData.getData('text/plain');
-			pasteHtmlAtCaret(text, false);
-			_editor.html(_editor.html());
-		}
+			if ((e.originalEvent || e).clipboardData) {
+				var content = (e.originalEvent || e).clipboardData.getData('text/plain');
+				document.execCommand('insertText', false, content);
+			} else if (window.clipboardData) {
+				var content = window.clipboardData.getData('Text');
+				document.selection.createRange().pasteHTML(content);
+			}
+		};
 
+		var onKeyUp = function(e) {
+			var node;
+			if (window.getSelection) {
+				node = window.getSelection().anchorNode;
+			} else {
+				node = document.getSelection().anchorNode;
+			}
+			console.log("onKeyUp", node);
+			node = (node.nodeType==3)? node.parentNode:node;
+
+			switch(e.keyCode) {
+				case KEY.BACKSPACE:
+				case KEY.DELETE:
+					// TODO 만약 text가 아니라면 node 삭제
+					return;
+			}
+
+			if (node != this) {
+				// TODO 아무것도 못하게!
+				console.log(node, "not equals", this);
+			} else {
+				// TODO 서제스트
+				console.log(getCaretPosition(this), e.target);
+			}
+		};
+
+		//
+		var onKeyDown = function(e) {
+			console.log("keyCode", e.keyCode);
+
+			switch (e.keyCode) {
+				case KEY.UP:
+				case KEY.DOWN:
+				case KEY.LEFT:
+				case KEY.RIGHT:
+				case KEY.TAB:
+				case KEY.HOME:
+				case KEY.END:
+				case KEY.PAGEUP:
+				case KEY.PAGEDOWN:
+					return;
+			}
+
+			var node;
+			if (window.getSelection) {
+				node = window.getSelection().anchorNode;
+			} else {
+				node = document.getSelection().anchorNode;
+			};
+			console.log("node", node);
+			node = (node.nodeType == 3)? node.parentNode:node;
+			console.log(node.nodeName, node.nodeType, node, node.tagName);
+
+			if (node.tagName == "SPAN") {
+				console.log(this);
+				console.log("이건 metion", node.nodeName, node.nextSibling);
+
+				switch (e.keyCode) {
+					case KEY.BACKSPACE:
+					case KEY.DELETE:
+						e.preventDefault();
+						$(node).remove();
+						return;
+				}
+
+				var pos = getCaretPosition(node),
+					focusNode = document.createTextNode(" ");
+				if (pos == 0) {
+					if (!node.previousSibling) {
+						$(focusNode).insertBefore(node);
+					} else {
+						focusNode = node.previousSibling;
+					}
+				} else {
+					if (!node.nextSibling) {
+						$(focusNode).insertAfter(node);
+					} else {
+						focusNode = node.nextSibling;
+					}
+				}
+
+				moveCaret(focusNode);
+			}
+
+		};
+
+		var onBlur = function(e) {
+			console.log("onBlur", savedRange);
+			if(document.getSelection) {
+				savedRange = document.getSelection().getRangeAt(0);
+			} else if(document.selection) {
+				savedRange = document.selection.createRange();
+			}
+		};
+
+		var onFocus = function(e) {
+			console.log("onFocus", savedRange);
+			if (savedRange) {
+				if (window.getSelection) {
+					console.log("window.getSelection");
+					var s = window.getSelection();
+					if (s.rangeCount > 0) {
+						s.removeAllRanges();
+					}
+					s.addRange(savedRange);
+					e.preventDefault();
+				} else if (document.createRange) {
+					console.log("document.createRange");
+					document.getSelection().addRange(savedRange);
+				} else if (document.selection) {
+					console.log("document.selection");
+					savedRange.select();
+				}
+			}
+		};
 
 		// main
 		init();
@@ -110,6 +224,9 @@
 			},
 			mentions: function() {
 				return _mentions;
+			},
+			addMention: function(mention) {
+				addMention(mention);
 			}
 		}
 	}
@@ -120,8 +237,7 @@
 		}
 
 		if (this.length > 0) {
-			var dom = this[0];
-			return $.data(this[0], "editor") || $.data(this, "editor", new Editor(this, options));
+			return $.data(this[0], "editor") || $.data(this[0], "editor", new Editor(this, options));
 		}
 	};
 
