@@ -41,23 +41,86 @@
 			}
 		}
 		return caretPos;
-	}
+	};
 
-	var moveCaret = function(node, isStart){
-		var doc = document, sel, range;
-		if (window.getSelection && doc.createRange) {
-			range = doc.createRange();
+	var moveCaret = function(node){
+		var sel, range;
+		if (window.getSelection) {
+			range = document.createRange();
 			range.selectNodeContents(node);
 			range.collapse(false);
 			sel = window.getSelection();
 			sel.removeAllRanges();
 			sel.addRange(range);
-		} else if (doc.body.createTextRange) {
-			range = doc.body.createTextRange();
+		} else if (document.selection) {
+			range = document.body.createTextRange();
 			range.moveToElementText(node);
+			range.collapse(false);
 			range.select();
 		}
+	};
+
+	var moveCaretBefore = function(node) {
+		var focusNode;
+		if (!node.previousSibling || node.previousSibling.tagName == "SPAN") {
+			focusNode = document.createTextNode(" ");
+			$(focusNode).insertBefore(node);
+		} else {
+			focusNode = node.previousSibling;
+		}
+
+		moveCaret(focusNode);
+	};
+
+	var moveCaretAfter = function (node) {
+		var focusNode;
+		if (!node.nextSibling || node.nextSibling.tagName == "SPAN") {
+			focusNode = document.createTextNode(" ");
+			$(focusNode).insertAfter(node);
+		} else {
+			focusNode = node.nextSibling;
+		}
+
+		moveCaret(focusNode);
+	};
+
+	var isOrContainsNode = function(ancestor, descendant) {
+		var node = descendant;
+		while (node) {
+			if (node === ancestor) {
+				return true;
+			}
+			node = node.parentNode;
+		}
+		return false;
 	}
+
+	var insertNodeOverSelection = function(node, containerNode) {
+		var sel, range, html;
+		if (window.getSelection) {
+			sel = window.getSelection();
+			if (sel.getRangeAt && sel.rangeCount) {
+				range = sel.getRangeAt(0);
+				if (isOrContainsNode(containerNode, range.commonAncestorContainer)) {
+					range.deleteContents();
+					range.insertNode(node);
+				} else {
+					containerNode.append(node);
+				}
+			}
+		} else if (document.selection && document.selection.createRange) {
+			range = document.selection.createRange();
+			if (isOrContainsNode(containerNode, range.parentElement())) {
+				html = (node.nodeType == 3) ? node.data : node.outerHTML;
+				range.pasteHTML(html);
+			} else {
+				containerNode.appendChild(node);
+			}
+		}
+
+		moveCaretAfter(node);
+	};
+
 
 	var Editor = function(field, options) {
 		var _field = $(field),
@@ -78,12 +141,35 @@
 			_editor.on('focus', onFocus);
 		};
 
+		var saveRange = function() {
+			if(document.getSelection) {
+				savedRange = document.getSelection().getRangeAt(0);
+			} else if(document.selection) {
+				savedRange = document.selection.createRange();
+			}
+		};
+
+		var restoreRange = function() {
+			if (savedRange) {
+				if (window.getSelection) {
+					var s = window.getSelection();
+					if (s.rangeCount > 0) {
+						s.removeAllRanges();
+					}
+					s.addRange(savedRange);
+				} else if (document.createRange) {
+					document.getSelection().addRange(savedRange);
+				} else if (document.selection) {
+					savedRange.select();
+				}
+			}
+		};
+
 		var addMention = function(mention) {
-			_editor.focus();
 			var pos = getCaretPosition(_editor);
 			console.log("addMention", mention, pos);
 
-			document.execCommand('insertHTML', false, "<span class='_mention' data-id='" + mention.id + "'>" + mention.name + "</span> ");
+			insertNodeOverSelection($("<span class='_mention' data-id='" + mention.id + "'>" + mention.name + "</span>")[0], _editor);
 		};
 
 		// event
@@ -153,9 +239,6 @@
 			console.log(node.nodeName, node.nodeType, node, node.tagName);
 
 			if (node.tagName == "SPAN") {
-				console.log(this);
-				console.log("이건 metion", node.nodeName, node.nextSibling);
-
 				switch (e.keyCode) {
 					case KEY.BACKSPACE:
 					case KEY.DELETE:
@@ -164,56 +247,27 @@
 						return;
 				}
 
-				var pos = getCaretPosition(node),
-					focusNode = document.createTextNode(" ");
+				var pos = getCaretPosition(node);
 				if (pos == 0) {
-					if (!node.previousSibling) {
-						$(focusNode).insertBefore(node);
-					} else {
-						focusNode = node.previousSibling;
-					}
+					moveCaretBefore(node);
 				} else {
-					if (!node.nextSibling) {
-						$(focusNode).insertAfter(node);
-					} else {
-						focusNode = node.nextSibling;
-					}
+					moveCaretAfter(node);
 				}
-
-				moveCaret(focusNode);
 			}
 
 		};
 
 		var onBlur = function(e) {
 			console.log("onBlur", savedRange);
-			if(document.getSelection) {
-				savedRange = document.getSelection().getRangeAt(0);
-			} else if(document.selection) {
-				savedRange = document.selection.createRange();
-			}
+			saveRange();
 		};
 
 		var onFocus = function(e) {
 			console.log("onFocus", savedRange);
-			if (savedRange) {
-				if (window.getSelection) {
-					console.log("window.getSelection");
-					var s = window.getSelection();
-					if (s.rangeCount > 0) {
-						s.removeAllRanges();
-					}
-					s.addRange(savedRange);
-					e.preventDefault();
-				} else if (document.createRange) {
-					console.log("document.createRange");
-					document.getSelection().addRange(savedRange);
-				} else if (document.selection) {
-					console.log("document.selection");
-					savedRange.select();
-				}
-			}
+			restoreRange();
+			e.preventDefault();
 		};
+
 
 		// main
 		init();

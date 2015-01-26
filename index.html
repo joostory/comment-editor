@@ -12,7 +12,7 @@
 		width: 400px;
 	}
 	.comments .editor { border:1px solid #ccc; border-radius:5px; min-height:100px; padding:10px; overflow:hidden;white-space: pre-wrap; word-wrap:break-word; }
-	.comments .editor ._mention { display:inline-block; padding: 0 3px; background:#eee; border:1px solid #333; border-radius:5px; }
+	.comments .editor ._mention { padding: 0 3px; background:#eee; border:1px solid #333; border-radius:5px; }
 	.comments .editor p { margin:0;padding:0; }
 
 	.comments .mentions-input-box {
@@ -56,12 +56,13 @@
 			// options
 		});
 
-		$("button").click(function(e) {
-			$(this).blur();
+		$("button").on("mousedown", function(e) {
+			e.preventDefault();
 			editor.addMention({id:9, name:"Test"});
 		});
 
-		$("ul.mentions>li").click(function(e) {
+		$("ul.mentions>li").on("mousedown", function(e) {
+			e.preventDefault();
 			var $this = $(this);
 			var id = $this.data('id'),
 			name = $this.data('name');
