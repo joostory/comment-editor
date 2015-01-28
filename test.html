@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<script src='https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js' type='text/javascript'></script>
+	</script>
+	<style>
+	#multiple {
+		border: 1px solid #ccc;
+		width: 800px;
+		min-height: 20px;
+		padding: 5px;
+		outline: none;
+	}
+	span {
+		display:inline-block;
+	}
+	</style>
+	<script>
+	function setCursorAfterA()
+{
+	var atag = document.getElementById("atagid");
+	var parentdiv = document.getElementById("status");
+	var range,selection;
+	if(window.getSelection) //FF,Chrome,Opera,Safari,IE9+
+	{
+		parentdiv.appendChild(document.createTextNode(""));//FF wont allow cursor to be placed directly between <a> tag and the end of the div, so a space is added at the end (this can be trimmed later)
+		range = document.createRange();//create range object (like an invisible selection)
+		range.setEndAfter(atag);//set end of range selection to just after the <a> tag
+		range.setStartAfter(atag);//set start of range selection to just after the <a> tag
+		selection = window.getSelection();//get selection object (list of current selections/ranges)
+		selection.removeAllRanges();//remove any current selections (FF can have more than one)
+		parentdiv.focus();//Focuses contenteditable div (necessary for opera)
+		selection.addRange(range);//add our range object to the selection list (make our range visible)
+	}
+	else if(document.selection)//IE 8 and lower
+	{
+		range = document.body.createRange();//create a "Text Range" object (like an invisible selection)
+		range.moveToElementText(atag);//select the contents of the a tag (i.e. "Jane")
+		range.collapse(false);//collapse selection to end of range (between "e" and "</a>").
+		while(range.parentElement() == atag)//while ranges cursor is still inside <a> tag
+		{
+			range.move("character",1);//move cursor 1 character to the right
+		}
+		range.move("character",-1);//move cursor 1 character to the left
+		range.select()//move the actual cursor to the position of the ranges cursor
+	}
+	/*OPTIONAL:
+	atag.id = ""; //remove id from a tag
+	*/
+}
+	</script>
+	<title>Range Selection Tasks (Make Me Want to Cry)</title>
+</head>
+<body>
+	<div contenteditable='true' id='status'>I went shopping with <a href='#' id='atagid'>Jane</a></div>
+	<input type='button' onclick='setCursorAfterA()' value='Place Cursor After &lt;a/&gt; tag' >
+</body>
+	</html>

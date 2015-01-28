@@ -18,36 +18,117 @@
 		DOWN : 40
 	}; // Keys "enum"
 
-	var getCaretPosition = function(editableDiv) {
-		var caretPos = 0,
-		sel, range;
-		if (window.getSelection) {
-			sel = window.getSelection();
-			if (sel.rangeCount) {
-				range = sel.getRangeAt(0);
-				if (range.commonAncestorContainer.parentNode == editableDiv) {
-					caretPos = range.endOffset;
-				}
-			}
-		} else if (document.selection && document.selection.createRange) {
-			range = document.selection.createRange();
-			if (range.parentElement() == editableDiv) {
-				var tempEl = document.createElement("span");
-				editableDiv.insertBefore(tempEl, editableDiv.firstChild);
-				var tempRange = range.duplicate();
-				tempRange.moveToElementText(tempEl);
-				tempRange.setEndPoint("EndToEnd", range);
-				caretPos = tempRange.text.length;
-			}
-		}
-		return caretPos;
-	};
+	var findMentionTrigger = function() {
+		var doc = document,
+			win = doc.defaultView || doc.parentWindow,
+			sel, range, cloneRange, node, text = "";
 
-	var moveCaret = function(node){
+		if (typeof win.getSelection != "undefined") {
+			sel = win.getSelection();
+			range = sel.getRangeAt(0);
+			cloneRange = range.cloneRange();
+			node = range.endContainer;
+
+			cloneRange.selectNodeContents(range.endContainer);
+			while (node.previousSibling != null && node.previousSibling.nodeType == 3) {
+				node = node.previousSibling;
+			}
+			cloneRange.setStart(node, 0);
+			var lastIndex = node.data.search(/\s/);
+			if (lastIndex < 0 || lastIndex < range.endOffset) {
+				lastIndex = node.data.length;
+			}
+			if (lastIndex > range.endOffset) {
+				cloneRange.setEnd(range.endContainer, lastIndex);
+			} else {
+				cloneRange.setEnd(range.endContainer, range.endOffset);
+			}
+
+			text = cloneRange.toString();
+		} else if ( (sel = doc.selection) && sel.type != "Control") {
+			var textRange = sel.createRange();
+			var preCaretTextRange = doc.body.createTextRange();
+			preCaretTextRange.moveToElementText(element);
+			preCaretTextRange.setEndPoint("EndToEnd", textRange);
+			text = preCaretTextRange.text;
+		}
+
+		var triggerIndex = text.lastIndexOf('@');
+		if (triggerIndex < 0) {
+			return "";
+		} else {
+			return text.slice(triggerIndex+1, text.length);
+		}
+	}
+
+	var selectMention = function() {
+		var doc = document,
+		win = doc.defaultView || doc.parentWindow,
+		sel, range, cloneRange, node;
+
+		if (typeof win.getSelection != "undefined") {
+			sel = win.getSelection();
+			range = sel.getRangeAt(0);
+			cloneRange = range.cloneRange();
+			node = range.endContainer;
+
+			cloneRange.selectNodeContents(range.endContainer);
+			while (node.previousSibling != null && node.previousSibling.nodeType == 3 && node.data.search(/@/) < 0) {
+				node = node.previousSibling;
+			}
+			cloneRange.setStart(node, node.data.search(/@/));
+			var lastIndex = range.endContainer.data.search(/\s/);
+			if (lastIndex < 0 || lastIndex < range.endOffset) {
+				lastIndex = range.endContainer.data.length;
+			}
+			if (lastIndex > range.endOffset) {
+				cloneRange.setEnd(range.endContainer, lastIndex);
+			} else {
+				cloneRange.setEnd(range.endContainer, range.endOffset);
+			}
+			sel.addRange(cloneRange);
+		} else if ( (sel = doc.selection) && sel.type != "Control") {
+			var textRange = sel.createRange();
+			var preCaretTextRange = doc.body.createTextRange();
+			preCaretTextRange.moveToElementText(element);
+			preCaretTextRange.setEndPoint("EndToEnd", textRange);
+			preCaretTextRange.select();
+		}
+	}
+
+	var getCaretPosition = function(element) {
+		var caretOffset = 0;
+		var doc = element.ownerDocument || element.document;
+		var win = doc.defaultView || doc.parentWindow;
+		var sel;
+		if (typeof win.getSelection != "undefined") {
+			sel = win.getSelection();
+			if (sel.rangeCount > 0) {
+				var range = win.getSelection().getRangeAt(0);
+				var preCaretRange = range.cloneRange();
+				preCaretRange.selectNodeContents(element);
+				preCaretRange.setEnd(range.endContainer, range.endOffset);
+				caretOffset = preCaretRange.toString().length;
+			}
+		} else if ( (sel = doc.selection) && sel.type != "Control") {
+			var textRange = sel.createRange();
+			var preCaretTextRange = doc.body.createTextRange();
+			preCaretTextRange.moveToElementText(element);
+			preCaretTextRange.setEndPoint("EndToEnd", textRange);
+			caretOffset = preCaretTextRange.text.length;
+		}
+		return caretOffset;
+	}
+
+	var moveCaret = function(node, isStart){
 		var sel, range;
 		if (window.getSelection) {
 			range = document.createRange();
 			range.selectNodeContents(node);
+			if (isStart) {
+				range.setStart(node, 0);
+				range.setEnd(node, 0);
+			}
 			range.collapse(false);
 			sel = window.getSelection();
 			sel.removeAllRanges();
@@ -61,39 +142,16 @@
 	};
 
 	var moveCaretBefore = function(node) {
-		var focusNode;
-		if (!node.previousSibling || node.previousSibling.tagName == "SPAN") {
-			focusNode = document.createTextNode(" ");
-			$(focusNode).insertBefore(node);
-		} else {
-			focusNode = node.previousSibling;
-		}
-
-		moveCaret(focusNode);
+		var focusNode = document.createTextNode(" ");
+		$(focusNode).insertBefore(node);
+		moveCaret(focusNode, true);
 	};
 
 	var moveCaretAfter = function (node) {
-		var focusNode;
-		if (!node.nextSibling || node.nextSibling.tagName == "SPAN") {
-			focusNode = document.createTextNode(" ");
-			$(focusNode).insertAfter(node);
-		} else {
-			focusNode = node.nextSibling;
-		}
-
-		moveCaret(focusNode);
+		var focusNode = document.createTextNode(" ");
+		$(focusNode).insertAfter(node);
+		moveCaret(focusNode, false);
 	};
-
-	var isOrContainsNode = function(ancestor, descendant) {
-		var node = descendant;
-		while (node) {
-			if (node === ancestor) {
-				return true;
-			}
-			node = node.parentNode;
-		}
-		return false;
-	}
 
 	var insertNodeOverSelection = function(node, containerNode) {
 		var sel, range, html;
@@ -101,7 +159,8 @@
 			sel = window.getSelection();
 			if (sel.getRangeAt && sel.rangeCount) {
 				range = sel.getRangeAt(0);
-				if (isOrContainsNode(containerNode, range.commonAncestorContainer)) {
+
+				if ($.contains(containerNode[0], range.commonAncestorContainer)) {
 					range.deleteContents();
 					range.insertNode(node);
 				} else {
@@ -110,15 +169,150 @@
 			}
 		} else if (document.selection && document.selection.createRange) {
 			range = document.selection.createRange();
-			if (isOrContainsNode(containerNode, range.parentElement())) {
+			if ($.contains(containerNode[0], range.parentElement())) {
 				html = (node.nodeType == 3) ? node.data : node.outerHTML;
 				range.pasteHTML(html);
 			} else {
-				containerNode.appendChild(node);
+				containerNode.append(node);
 			}
 		}
 
 		moveCaretAfter(node);
+	};
+
+	var Mentions = function(mentions, callback) {
+		var _mentionListView = $("<ul class='_mention_list'></ul>"),
+			_searchedMentionViews = [],
+			_mentions = mentions,
+			_callback = callback,
+			_mentionsCollection = {},
+			_selected = 0;
+
+		var init = function() {
+			var i, data;
+			for (i = 0 ; i < _mentions.length ; i++) {
+				data = _mentions[i];
+				data.jaso = data.name.jaso();
+				_mentionsCollection[data.id] = data;
+			}
+
+			_mentionListView.delegate("li", "mousedown", onMentionListClick);
+		};
+
+		var makeView = function(data) {
+			var view = $("<li><img src='" + data.imageUrl + "'><span class='text'>" + data.name + "</span></li>");
+			view.data("id", data.id);
+			return view;
+		};
+
+		var selectNext = function() {
+			if (_searchedMentionViews.length > _selected + 1) {
+				selectItem(_selected + 1);
+			}
+		};
+
+		var selectPrev = function() {
+			if (_selected - 1 >= 0) {
+				selectItem(_selected - 1);
+			}
+		};
+
+		var select = function() {
+			if (_searchedMentionViews.length > _selected) {
+				var elm = _searchedMentionViews[_selected];
+				_callback(_mentionsCollection[elm.data('id')]);
+			}
+			hideList();
+		};
+
+		var search = function(word, addedCollection) {
+			if (!word || word.length == 0) {
+				hideList();
+				return;
+			}
+
+			var i,mention,result=[],jaso = word.jaso();
+			for (var i = 0 ; i < _mentions.length ; i++) {
+				mention = _mentions[i];
+				if (!addedCollection[mention.id]
+					 && (mention.name.indexOf(word) > -1 || mention.jaso.indexOf(jaso) > -1)) {
+					result.push(mention);
+				}
+			}
+
+			if (result.length > 0) {
+				showList(result);
+			} else {
+				hideList();
+			}
+
+		};
+
+		var showList = function(result) {
+			var i, view;
+			_mentionListView.empty();
+			_searchedMentionViews = [];
+			for (i = 0 ; i < result.length ; i++) {
+				view = makeView(result[i]);
+				_mentionListView.append(view);
+				_searchedMentionViews.push(view);
+			}
+
+			selectItem(0);
+			_mentionListView.show();
+		};
+
+		var selectItem = function(index) {
+			if (_searchedMentionViews.length > index) {
+				if (_searchedMentionViews.length > _selected) {
+					_searchedMentionViews[_selected].removeClass("select");
+				}
+
+				_selected = index;
+				_searchedMentionViews[index].addClass("select");
+			}
+		};
+
+		var hideList = function() {
+			_searchedMentionViews = [];
+			_mentionListView.hide();
+			_mentionListView.empty();
+		};
+
+
+		var onMentionListClick = function(e) {
+			var elm = $(e.target);
+			_callback(_mentionsCollection[elm.data('id')]);
+		};
+
+		init();
+
+		return {
+			view: function() {
+				return _mentionListView;
+			},
+			added: function() {
+				return _addedList;
+			},
+			next: function() {
+				selectNext();
+			},
+			prev: function() {
+				selectPrev();
+			},
+			select: function() {
+				select();
+			},
+			isVisible: function() {
+				return $.expr.filters.visible(_mentionListView[0]);
+			},
+			hide: function() {
+				hideList();
+			},
+			search: function(word, addedCollection) {
+				search(word, addedCollection || {});
+			}
+		};
 	};
 
 
@@ -126,51 +320,72 @@
 		var _field = $(field),
 			_options = options,
 			_editor = $("<div contenteditable></div>"),
-			_mentions = [],
-			savedRange;
+			_mentions;
 
 		var init = function() {
+			var mentions = _options.mentions? _options.mentions:[],
+			value = _options.value? _options.value:"";
+			_mentions = new Mentions(mentions, addMention);
+
+			_editor.html(makeHtml(value));
 			_editor.attr("class", _field.attr("class"));
 			_editor.insertBefore(_field);
+			_mentions.view().insertAfter(_field);
+			_mentions.hide();
 			_field.hide();
 
 			_editor.on('paste', onPaste);
 			_editor.on('keyup', onKeyUp);
 			_editor.on('keydown', onKeyDown);
-			_editor.on('blur', onBlur);
-			_editor.on('focus', onFocus);
-		};
-
-		var saveRange = function() {
-			if(document.getSelection) {
-				savedRange = document.getSelection().getRangeAt(0);
-			} else if(document.selection) {
-				savedRange = document.selection.createRange();
-			}
-		};
-
-		var restoreRange = function() {
-			if (savedRange) {
-				if (window.getSelection) {
-					var s = window.getSelection();
-					if (s.rangeCount > 0) {
-						s.removeAllRanges();
-					}
-					s.addRange(savedRange);
-				} else if (document.createRange) {
-					document.getSelection().addRange(savedRange);
-				} else if (document.selection) {
-					savedRange.select();
-				}
-			}
 		};
 
 		var addMention = function(mention) {
-			var pos = getCaretPosition(_editor);
-			console.log("addMention", mention, pos);
-
-			insertNodeOverSelection($("<span class='_mention' data-id='" + mention.id + "'>" + mention.name + "</span>")[0], _editor);
+			if (mention) {
+				selectMention();
+				insertNodeOverSelection($("<span class='_mention' data-id='" + mention.id + "'>" + mention.name + "</span>")[0], _editor);
+			}
 		};
+
+		// data에 해당하는 mention list를 가져와야한다.
+		var searchMention = function(data) {
+			var addedCollection = {};
+			_editor.children("span[data-id]").each(function() {
+				var elm = $(this);
+				addedCollection[elm.data("id")] = elm.text();
+			});
+
+			_mentions.search(data, addedCollection);
+		};
+
+
+		var getValue = function() {
+			var value = [];
+			_editor.contents().each(function() {
+				var elm = $(this), data = elm.data("id"), text = elm.text();
+				text = text.replace(/\[/g, '\\\[').replace(/\]/g, '\\\]');
+
+				if (data) {
+					value.push("@[" + data + ":" + text + "]")
+				} else {
+					value.push(text);
+				}
+			});
+			return value.join("");
+		};
+
+		var getAddedMentions = function() {
+			var added = [];
+			_editor.children("span[data-id]").each(function() {
+				var elm = $(this);
+				added.push({id:elm.data("id"), name:elm.text()});
+			});
+			return added;
+		};
+
+		var makeHtml = function(value) {
+			return value.replace(/@\[([^\]]+):([^\]]+)\]/g, "<span class='_mention' data-id='$1'>$2</span>").replace(/\\/g, "");
+		};
+
 
 		// event
 		var onPaste = function(e) {
@@ -186,41 +401,40 @@
 		};
 
 		var onKeyUp = function(e) {
-			var node;
-			if (window.getSelection) {
-				node = window.getSelection().anchorNode;
-			} else {
-				node = document.getSelection().anchorNode;
+			if (_mentions.isVisible()) {
+				switch (e.keyCode) {
+					case KEY.ESC:
+						_mentions.hide();
+						return;
+					case KEY.UP:
+						_mentions.prev();
+						return;
+					case KEY.DOWN:
+					case KEY.TAB:
+						_mentions.next();
+						return;
+					case KEY.RETURN:
+						_mentions.select();
+						return;
+				}
 			}
-			console.log("onKeyUp", node);
-			node = (node.nodeType==3)? node.parentNode:node;
 
-			switch(e.keyCode) {
-				case KEY.BACKSPACE:
-				case KEY.DELETE:
-					// TODO 만약 text가 아니라면 node 삭제
-					return;
-			}
-
-			if (node != this) {
-				// TODO 아무것도 못하게!
-				console.log(node, "not equals", this);
-			} else {
-				// TODO 서제스트
-				console.log(getCaretPosition(this), e.target);
-			}
+			searchMention(findMentionTrigger());
 		};
 
 		//
 		var onKeyDown = function(e) {
-			console.log("keyCode", e.keyCode);
-
 			switch (e.keyCode) {
+				case KEY.ESC:
 				case KEY.UP:
 				case KEY.DOWN:
+				case KEY.TAB:
+				case KEY.RETURN:
+					if (_mentions.isVisible()) {
+						e.preventDefault();
+					}
 				case KEY.LEFT:
 				case KEY.RIGHT:
-				case KEY.TAB:
 				case KEY.HOME:
 				case KEY.END:
 				case KEY.PAGEUP:
@@ -228,15 +442,11 @@
 					return;
 			}
 
-			var node;
-			if (window.getSelection) {
-				node = window.getSelection().anchorNode;
-			} else {
-				node = document.getSelection().anchorNode;
-			};
-			console.log("node", node);
+			if (!window.getSelection) {
+				return;
+			}
+			var node = window.getSelection().anchorNode;
 			node = (node.nodeType == 3)? node.parentNode:node;
-			console.log(node.nodeName, node.nodeType, node, node.tagName);
 
 			if (node.tagName == "SPAN") {
 				switch (e.keyCode) {
@@ -257,30 +467,16 @@
 
 		};
 
-		var onBlur = function(e) {
-			console.log("onBlur", savedRange);
-			saveRange();
-		};
-
-		var onFocus = function(e) {
-			console.log("onFocus", savedRange);
-			restoreRange();
-			e.preventDefault();
-		};
-
 
 		// main
 		init();
 
 		return {
 			value: function() {
-				return _field.val();
+				return getValue();
 			},
 			mentions: function() {
-				return _mentions;
-			},
-			addMention: function(mention) {
-				addMention(mention);
+				return getAddedMentions();
 			}
 		}
 	}
