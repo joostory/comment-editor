@@ -76,7 +76,7 @@
 			while (node.previousSibling != null && node.previousSibling.nodeType == 3 && node.data.search(/@/) < 0) {
 				node = node.previousSibling;
 			}
-			cloneRange.setStart(node, node.data.search(/@/));
+			cloneRange.setStart(node, node.data.lastIndexOf("@", range.endOffset));
 			var lastIndex = range.endContainer.data.search(/\s/);
 			if (lastIndex < 0 || lastIndex < range.endOffset) {
 				lastIndex = range.endContainer.data.length;
