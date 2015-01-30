@@ -401,38 +401,47 @@
 		};
 
 		var onKeyUp = function(e) {
-			if (_mentions.isVisible()) {
-				switch (e.keyCode) {
+			switch (e.keyCode) {
 					case KEY.ESC:
-						_mentions.hide();
-						return;
 					case KEY.UP:
-						_mentions.prev();
-						return;
 					case KEY.DOWN:
 					case KEY.TAB:
-						_mentions.next();
-						return;
 					case KEY.RETURN:
-						_mentions.select();
-						return;
-				}
+							if (_mentions.isVisible()) {
+									return;
+							}
 			}
-
 			searchMention(findMentionTrigger());
 		};
 
-		//
+
 		var onKeyDown = function(e) {
 			switch (e.keyCode) {
 				case KEY.ESC:
+					if (_mentions.isVisible()) {
+							_mentions.hide();
+							e.preventDefault();
+					}
+					return;
 				case KEY.UP:
+					if (_mentions.isVisible()) {
+							_mentions.prev();
+							e.preventDefault();
+					}
+					return;
 				case KEY.DOWN:
 				case KEY.TAB:
+					if (_mentions.isVisible()) {
+							_mentions.next();
+							e.preventDefault();
+					}
+					return;
 				case KEY.RETURN:
 					if (_mentions.isVisible()) {
-						e.preventDefault();
+							_mentions.select();
+							e.preventDefault();
 					}
+					return;
 				case KEY.LEFT:
 				case KEY.RIGHT:
 				case KEY.HOME:
