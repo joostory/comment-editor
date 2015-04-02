@@ -193,7 +193,8 @@
                 _mentionsCollection[data.userId] = data;
             }
 
-            _mentionListView.delegate("li", "mousedown", onMentionListClick);
+            _mentionListView.on("mousedown", onMentionListClick);
+            _mentionListView.delegate("li", "mouseover", onMentionSelect);
         };
 
 		var add = function(mention) {
@@ -289,8 +290,11 @@
 
 
         var onMentionListClick = function(e) {
-            var elm = $(e.target);
-            _callback(_mentionsCollection[elm.data('id')]);
+            select();
+        };
+
+        var onMentionSelect = function(e) {
+            selectItem($(this).index());
         };
 
         init();
