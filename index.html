@@ -36,6 +36,9 @@
 		-webkit-box-shadow: 0 0 0 1px #a3bcea;
 	}
 
+	#submit { margin:10px 0; }
+	.result { width:380px; height:80px; padding:10px; overflow:scroll; border:1px solid #eee; border-radius:5px; font-size:16px }
+
 
 	</style>
 </head>
@@ -43,27 +46,28 @@
 	<h1>Metion Input Sample</h1>
 
 	<div class="comments">
-		<textarea class="editor">홍길동 안녕? 홍방동 안녕? @[아이디:이름] 이게 멘션?</textarea>
+		<textarea class="editor">홍길동 안녕? 홍방동 안녕? @\[아이디:이름\] 이게 멘션?</textarea>
 		<button id="submit">OK</button>
 	</div>
 
-	<script src='../jquery-mentions-input/lib/jquery.elastic.js' type='text/javascript'></script>
+	<textarea class="result" readonly="readonly"></textarea>
+
 	<script src='jaso.js' type='text/javascript'></script>
 	<script src="editor.js"></script>
 	<script>
 	(function($) {
 		var editor = $("textarea.editor").editor({
 			// options
-			value: "@[1:홍길동] 안녕? @[3:홍방동] 안녕?@\\[아이디:이름\\] 이게 멘션?",
+			// value: "@[1:홍길동] 안녕? @[3:홍방동] 안녕?@\\[아이디:이름\\] 이게 멘션?",
 			mentions: [
-				{id: 1, name:"홍길동", jaso:"홍길동".jaso(), imageUrl:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"},
-				{id: 2, name:"홍길순", jaso:"홍길순".jaso(), imageUrl:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"},
-				{id: 3, name:"홍방동", jaso:"홍방동".jaso(), imageUrl:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"}
+				{userId: 1, userName:"홍길동", userImage:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"},
+				{userId: 2, userName:"홍길순", userImage:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"},
+				{userId: 3, userName:"홍방동", userImage:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"}
 			]
 		});
 
 		$("#submit").on("click", function() {
-			alert(editor.value());
+			$(".result").text(editor.value());
 		});
 	})(jQuery);
 	</script>
