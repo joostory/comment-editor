@@ -1,0 +1,33 @@
+.comments {
+	position:relative;
+	width: 400px;
+}
+.comments .editor { display:block; border:1px solid #ccc; border-radius:5px; min-height:100px; padding:10px; overflow:hidden;white-space: pre-wrap; word-wrap:break-word; outline:none }
+.comments .editor ._mention { padding: 0 3px; background:#eee; border:1px solid #333; border-radius:5px; }
+.comments .editor p { margin:0;padding:0; }
+.comments .editor_placeholder { position:absolute; top:0; left:0; padding:11px; color:#ccc; z-index:-1 }
+
+.comments ._mention_list { padding:0;margin:0; position:absolute; width:400px; }
+.comments ._mention_list li { background:#fff; display:block;position:relative; min-height:20px; padding:4px; }
+.comments ._mention_list li.select { background:#eee; }
+.comments ._mention_list li img { width:20px; height:20px; border-radius:5px; position:absolute; left:4px;top:4px; }
+.comments ._mention_list li span.text { display:block; position:absolute; left:28px; font-size:11px; list-style:none; padding:3px; line-height:20px;display: block;overflow: hidden;padding-bottom: 2px;text-overflow: ellipsis;white-space: nowrap;}
+
+.comments .mentions-input-box {
+	line-height:1.6em;
+}
+.comments .mentions-input-box textarea {
+	line-height:1.6em;
+	min-height: 100px;
+}
+
+.mentions-input-box .mentions > div > strong {
+	background: #d8deea;
+	background: -webkit-gradient(linear, center top, center bottom, from(#dce6f8), to(#bdcff1));
+	background: -webkit-linear-gradient(#dce6f8, #bdcff1);
+	-webkit-border-radius: 2px;
+	-webkit-box-shadow: 0 0 0 1px #a3bcea;
+}
+
+#submit { margin:10px 0; }
+.result { width:380px; height:80px; padding:10px; overflow:auto; border:1px solid #ccc; border-radius:5px; font-size:16px }

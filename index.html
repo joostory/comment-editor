@@ -2,67 +2,34 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>Mention Input Sample</title>
-
-	<script src='https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js' type='text/javascript'></script>
-	<script src='http://documentcloud.github.com/underscore/underscore-min.js' type='text/javascript'></script>
-
-	<style>
-	.comments {
-		width: 400px;
-	}
-	.comments .editor { border:1px solid #ccc; border-radius:5px; min-height:100px; padding:10px; overflow:hidden;white-space: pre-wrap; word-wrap:break-word; }
-	.comments .editor ._mention { padding: 0 3px; background:#eee; border:1px solid #333; border-radius:5px; }
-	.comments .editor p { margin:0;padding:0; }
-	.comments ._mention_list { padding:0;margin:0; }
-	.comments ._mention_list li { background:#fff; display:block;position:relative; min-height:20px; padding:4px; }
-	.comments ._mention_list li.select { background:#eee; }
-	.comments ._mention_list li img { width:20px; height:20px; border-radius:5px; position:absolute; left:4px;top:4px; }
-	.comments ._mention_list li span.text { display:block; position:absolute; left:28px; font-size:11px; list-style:none; padding:3px; line-height:20px;display: block;overflow: hidden;padding-bottom: 2px;text-overflow: ellipsis;white-space: nowrap;}
-
-	.comments .mentions-input-box {
-		line-height:1.6em;
-	}
-	.comments .mentions-input-box textarea {
-		line-height:1.6em;
-		min-height: 100px;
-	}
-
-	.mentions-input-box .mentions > div > strong {
-		background: #d8deea;
-		background: -webkit-gradient(linear, center top, center bottom, from(#dce6f8), to(#bdcff1));
-		background: -webkit-linear-gradient(#dce6f8, #bdcff1);
-		-webkit-border-radius: 2px;
-		-webkit-box-shadow: 0 0 0 1px #a3bcea;
-	}
-
-	#submit { margin:10px 0; }
-	.result { width:380px; height:80px; padding:10px; overflow:scroll; border:1px solid #eee; border-radius:5px; font-size:16px }
-
-
-	</style>
+	<title>댓글 에디터</title>
+	<link rel="stylesheet" href="comment-editor.css" />
 </head>
 <body>
-	<h1>Metion Input Sample</h1>
+	<h1>댓글 에디터</h1>
 
-	<div class="comments">
-		<textarea class="editor">홍길동 안녕? 홍방동 안녕? @\[아이디:이름\] 이게 멘션?</textarea>
-		<button id="submit">OK</button>
-	</div>
+	<form>
+		<div class="comments">
+			<textarea class="editor" placeholder="여기에 메시지를 입력해보세요."></textarea>
+		</div>
+
+		<button type="button" id="submit">결과보기</button>
+	</form>
 
 	<textarea class="result" readonly="readonly"></textarea>
 
+	<script src='https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js' type='text/javascript'></script>
 	<script src='jaso.js' type='text/javascript'></script>
-	<script src="editor.js"></script>
+	<script src="comment-editor.js"></script>
 	<script>
 	(function($) {
 		var editor = $("textarea.editor").editor({
-			// options
-			// value: "@[1:홍길동] 안녕? @[3:홍방동] 안녕?@\\[아이디:이름\\] 이게 멘션?",
 			mentions: [
 				{userId: 1, userName:"홍길동", userImage:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"},
 				{userId: 2, userName:"홍길순", userImage:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"},
-				{userId: 3, userName:"홍방동", userImage:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"}
+				{userId: 3, userName:"홍일점", userImage:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"},
+				{userId: 4, userName:"John", userImage:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"},
+				{userId: 5, userName:"Jane", userImage:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"}
 			]
 		});
 
