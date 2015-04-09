@@ -370,6 +370,7 @@
             initMentions(mentions);
 
             _editor.on('paste', onPaste);
+            _editor.on('drop', onDrop);
             _editor.on('keyup', onKeyUp);
             _editor.on('keydown', onKeyDown);
         };
@@ -480,6 +481,11 @@
                 content = window.clipboardData.getData('Text');
                 document.selection.createRange().pasteHTML(content);
             }
+        };
+
+        var onDrop = function(e) {
+            e.preventDefault();
+            return false;
         };
 
         var onKeyUp = function(e) {
