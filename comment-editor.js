@@ -355,7 +355,7 @@
 
         var init = function() {
             var mentions = _options.mentions? _options.mentions:[],
-                value = _options.value? _options.value:_field.text();
+                value = _options.value? _options.value:_field.val();
 
             _editor.html(makeHtml(value));
             _editor.attr("class", _field.attr("class"));
