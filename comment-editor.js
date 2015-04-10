@@ -57,9 +57,9 @@
 
             var triggerIndex = text.lastIndexOf('@');
             if (triggerIndex < 0) {
-                return "";
+                return { index: triggerIndex };
             } else {
-                return text.slice(triggerIndex+1, text.length);
+                return { index: triggerIndex, data: text.slice(triggerIndex+1, text.length) };
             }
         },
         selectMention: function() {
@@ -174,15 +174,24 @@
             }
 
             util.moveCaretAfter(node);
+        },
+        trim: function(str) {
+            if (str.trim) {
+                return str.trim();
+            } else {
+                return str.replace(/^\s+|\s+$/g, '');
+            }
         }
     }
 
     var Mentions = function(mentions, callback) {
         var _mentionListView = $("<ul class='_mention_list'></ul>"),
             _searchedMentionViews = [],
+            _defaultMentions = [],
+            _defaultMentionsCollection = {},
             _mentions = mentions || [],
-            _callback = callback,
             _mentionsCollection = {},
+            _callback = callback,
             _selected = 0;
 
         var init = function() {
@@ -197,13 +206,20 @@
             _mentionListView.delegate("li", "mouseover", onMentionSelect);
         };
 
-		var add = function(mention) {
+		var add = function(mention, isDefault) {
 			var i, data;
 			if (!_mentionsCollection[mention.userId]) {
 				mention.jaso = mention.userName.jaso();
 				_mentions.push(mention);
 				_mentionsCollection[mention.userId] = mention;
+
+
 			}
+
+            if (isDefault && !_defaultMentionsCollection[mention.userId]) {
+                _defaultMentions.push(mention);
+                _defaultMentionsCollection[mention.userId] = mention;
+            }
 		};
 
         var makeView = function(data) {
@@ -235,17 +251,28 @@
         };
 
         var search = function(word, addedCollection) {
-            if (!word || word.length == 0) {
-                hideList();
-                return;
-            }
+            console.log("mention search", word, _defaultMentions);
 
-            var i,mention,result=[],jaso = word.jaso();
-            for (i = 0 ; i < _mentions.length ; i++) {
-                mention = _mentions[i];
-                if (!addedCollection[mention.userId]
-                    && (mention.userName.toUpperCase().indexOf(word.toUpperCase()) > -1 || mention.jaso.indexOf(jaso) > -1)) {
-                    result.push(mention);
+            var i, mention, result=[];
+
+            word = word? util.trim(word) : "";
+
+            if (!word || word.length == 0) {
+                for (i = 0 ; i < _defaultMentions.length ; i++) {
+                    mention = _defaultMentions[i];
+                    if (!addedCollection[mention.userId]
+                        && (mention.userName.toUpperCase().indexOf(word.toUpperCase()) > -1 || mention.jaso.indexOf(jaso) > -1)) {
+                        result.push(mention);
+                    }
+                }
+            } else {
+                var jaso = word.jaso();
+                for (i = 0 ; i < _mentions.length ; i++) {
+                    mention = _mentions[i];
+                    if (!addedCollection[mention.userId]
+                        && (mention.userName.toUpperCase().indexOf(word.toUpperCase()) > -1 || mention.jaso.indexOf(jaso) > -1)) {
+                        result.push(mention);
+                    }
                 }
             }
 
@@ -325,8 +352,8 @@
             search: function(word, addedCollection) {
                 search(word, addedCollection || {});
             },
-			add: function(mention) {
-				add(mention);
+			add: function(mention, isDefault) {
+				add(mention, isDefault);
 			}
         };
     };
@@ -348,9 +375,9 @@
             _mentions.hide();
         };
 
-		var addMention = function(mention) {
+		var addMention = function(mention, isDefault) {
 			if (_mentions) {
-				_mentions.add(mention);
+				_mentions.add(mention, isDefault);
 			}
 		};
 
@@ -399,13 +426,18 @@
 
         // data에 해당하는 mention list를 가져와야한다.
         var searchMention = function(data) {
+            if (data.index < 0) {
+                _mentions.hide();
+                return;
+            }
+
             var addedCollection = {};
             _editor.find("span[data-id]").each(function() {
                 var elm = $(this);
                 addedCollection[elm.data("id")] = elm.text();
             });
 
-            _mentions.search(data, addedCollection);
+            _mentions.search(data.data, addedCollection);
         };
 
 
@@ -583,8 +615,8 @@
             initMentions: function(mentions) {
                 initMentions(mentions);
             },
-			addMention: function(mention) {
-				addMention(mention);
+			addMention: function(mention, isDefault) {
+				addMention(mention, isDefault);
 			},
             reset: function() {
                 reset();

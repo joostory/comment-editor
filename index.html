@@ -33,6 +33,9 @@
 			]
 		});
 
+		editor.addMention({userId: 4, userName:"John", userImage:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"}, true);
+		editor.addMention({userId: 5, userName:"Jane", userImage:"http://mud-kage.kakao.co.kr/14/dn/btqbJlyNypL/kFOdHKDFNBlBW2VD9Ei00K/o.jpg"}, true);
+
 		$("#submit").on("click", function() {
 			$(".result").text(editor.value());
 		});
