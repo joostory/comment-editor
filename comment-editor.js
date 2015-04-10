@@ -290,6 +290,7 @@
 
 
         var onMentionListClick = function(e) {
+            e.preventDefault();
             select();
         };
 
