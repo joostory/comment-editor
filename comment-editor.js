@@ -251,8 +251,6 @@
         };
 
         var search = function(word, addedCollection) {
-            console.log("mention search", word, _defaultMentions);
-
             var i, mention, result=[];
 
             word = word? util.trim(word) : "";
@@ -536,11 +534,6 @@
 
         //
         var onKeyDown = function(e) {
-            if (window.getSelection) {
-                var n = window.getSelection().anchorNode;
-                console.log("keyDown", n.nodeName, n.nodeType, n.parentNode.nodeName, n.parentNode.nodeType);
-            }
-
             switch (e.keyCode) {
                 case KEY.ESC:
                     if (_mentions.isVisible()) {
