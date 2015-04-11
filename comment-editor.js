@@ -185,7 +185,7 @@
     }
 
     var Mentions = function(mentions, callback) {
-        var _mentionListView = $("<ul class='_mention_list'></ul>"),
+        var $mentionListView = $("<ul class='_mention_list'></ul>"),
             _searchedMentionViews = [],
             _defaultMentions = [],
             _defaultMentionsCollection = {},
@@ -202,8 +202,8 @@
                 _mentionsCollection[data.userId] = data;
             }
 
-            _mentionListView.on("mousedown", onMentionListClick);
-            _mentionListView.delegate("li", "mouseover", onMentionSelect);
+            $mentionListView.on("mousedown", onMentionListClick);
+            $mentionListView.delegate("li", "mouseover", onMentionSelect);
         };
 
 		var add = function(mention, isDefault) {
@@ -284,16 +284,16 @@
 
         var showList = function(result) {
             var i, view;
-            _mentionListView.empty();
+            $mentionListView.empty();
             _searchedMentionViews = [];
             for (i = 0 ; i < result.length ; i++) {
                 view = makeView(result[i]);
-                _mentionListView.append(view);
+                $mentionListView.append(view);
                 _searchedMentionViews.push(view);
             }
 
             selectItem(0);
-            _mentionListView.show();
+            $mentionListView.show();
         };
 
         var selectItem = function(index) {
@@ -309,8 +309,8 @@
 
         var hideList = function() {
             _searchedMentionViews = [];
-            _mentionListView.hide();
-            _mentionListView.empty();
+            $mentionListView.hide();
+            $mentionListView.empty();
         };
 
 
@@ -327,7 +327,7 @@
 
         return {
             view: function() {
-                return _mentionListView;
+                return $mentionListView;
             },
             added: function() {
                 return _addedList;
@@ -342,7 +342,7 @@
                 select();
             },
             isVisible: function() {
-                return $.expr.filters.visible(_mentionListView[0]);
+                return $.expr.filters.visible($mentionListView[0]);
             },
             hide: function() {
                 hideList();
@@ -360,15 +360,15 @@
     var Editor = function(field, options) {
         var _field = $(field),
             _options = options || {},
-            _editor = $("<div contenteditable></div>"),
-            _placeholder = $("<div class='editor_placeholder'></div>"),
+            $editor = $("<div contenteditable></div>"),
+            $placeholder = $("<div class='editor_placeholder'></div>"),
             _mentions = null;
 
         var initMentions = function(mentions) {
             if (_mentions) {
                 _mentions.view().remove();
             }
-            _mentions = new Mentions(mentions, addMentionView);
+            _mentions = Mentions(mentions, addMentionView);
             _mentions.view().insertAfter(_field);
             _mentions.hide();
         };
@@ -383,42 +383,42 @@
             var mentions = _options.mentions? _options.mentions:[],
                 value = _options.value? _options.value:_field.val();
 
-            _editor.html(makeHtml(value));
-            _editor.attr("class", _field.attr("class"));
-            _editor.insertBefore(_field);
+            $editor.html(makeHtml(value));
+            $editor.attr("class", _field.attr("class"));
+            $editor.insertBefore(_field);
 
-            _placeholder.html(_field.attr("placeholder"));
-            _placeholder.insertBefore(_field);
+            $placeholder.html(_field.attr("placeholder"));
+            $placeholder.insertBefore(_field);
             resetPlaceHolder();
 
             _field.hide();
 
             initMentions(mentions);
 
-            _editor.on('paste', onPaste);
-            _editor.on('drop', onDrop);
-            _editor.on('keyup', onKeyUp);
-            _editor.on('keydown', onKeyDown);
+            $editor.on('paste', onPaste);
+            $editor.on('drop', onDrop);
+            $editor.on('keyup', onKeyUp);
+            $editor.on('keydown', onKeyDown);
         };
 
         var reset = function() {
-            _editor.html("");
+            $editor.html("");
             _field.val("");
             resetPlaceHolder();
         };
 
         var resetPlaceHolder = function() {
-            if (_editor.text().length > 0) {
-                _placeholder.hide();
+            if ($editor.text().length > 0) {
+                $placeholder.hide();
             } else {
-                _placeholder.show();
+                $placeholder.show();
             }
         };
 
         var addMentionView = function(mention) {
             if (mention) {
                 util.selectMention();
-                util.insertNodeOverSelection($("<span class='_mention' data-id='" + mention.userId + "'>@" + mention.userName + "</span>")[0], _editor);
+                util.insertNodeOverSelection($("<span class='_mention' data-id='" + mention.userId + "'>@" + mention.userName + "</span>")[0], $editor);
             }
         };
 
@@ -430,7 +430,7 @@
             }
 
             var addedCollection = {};
-            _editor.find("span[data-id]").each(function() {
+            $editor.find("span[data-id]").each(function() {
                 var elm = $(this);
                 addedCollection[elm.data("id")] = elm.text();
             });
@@ -440,7 +440,7 @@
 
 
         var getValue = function() {
-            return _getTextValue(_editor);
+            return _getTextValue($editor);
         };
 
         var _getTextValue = function(dom) {
@@ -488,7 +488,7 @@
 
         var getAddedMentions = function() {
             var added = [];
-            _editor.find("span[data-id]").each(function() {
+            $editor.find("span[data-id]").each(function() {
                 var elm = $(this);
                 added.push({id:elm.data("id"), name:elm.text()});
             });
@@ -532,7 +532,6 @@
             resetPlaceHolder();
         };
 
-        //
         var onKeyDown = function(e) {
             switch (e.keyCode) {
                 case KEY.ESC:
@@ -615,7 +614,7 @@
                 reset();
             },
             focus: function() {
-                _editor.focus();
+                $editor.focus();
             }
         }
     };
