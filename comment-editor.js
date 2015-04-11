@@ -181,6 +181,9 @@
             } else {
                 return str.replace(/^\s+|\s+$/g, '');
             }
+        },
+        jaso: function(str) {
+            return str.jaso();
         }
     }
 
@@ -198,7 +201,7 @@
             var i, data;
             for (i = 0 ; i < _mentions.length ; i++) {
                 data = _mentions[i];
-                data.jaso = data.userName.jaso();
+                data.jaso = util.jaso(data.userName);
                 _mentionsCollection[data.userId] = data;
             }
 
@@ -209,7 +212,7 @@
 		var add = function(mention, isDefault) {
 			var i, data;
 			if (!_mentionsCollection[mention.userId]) {
-				mention.jaso = mention.userName.jaso();
+				mention.jaso = util.jaso(mention.userName);
 				_mentions.push(mention);
 				_mentionsCollection[mention.userId] = mention;
 
@@ -264,7 +267,7 @@
                     }
                 }
             } else {
-                var jaso = word.jaso();
+                var jaso = util.jaso(word);
                 for (i = 0 ; i < _mentions.length ; i++) {
                     mention = _mentions[i];
                     if (!addedCollection[mention.userId]
