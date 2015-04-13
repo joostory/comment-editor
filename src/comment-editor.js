@@ -365,6 +365,7 @@
             _options = options || {},
             $editor = $("<div contenteditable></div>"),
             $placeholder = $("<div class='editor_placeholder'></div>"),
+            _maxLength,
             _mentions = null;
 
         var initMentions = function(mentions) {
@@ -383,8 +384,10 @@
 		};
 
         var init = function() {
-            var mentions = _options.mentions? _options.mentions:[],
-                value = _options.value? _options.value:$field.val();
+            var mentions = _options.mentions || [],
+                value = _options.value || $field.val();
+
+            _maxLength = _options.maxLength || $field.attr("maxlength");
 
             $editor.html(makeHtml(value));
             $editor.attr("class", $field.attr("class"));
@@ -507,12 +510,16 @@
         var onPaste = function(e) {
             e.preventDefault();
 
-			var content;
+			var content,
+                remainLength = length = _maxLength - getValue().length;
+
             if ((e.originalEvent || e).clipboardData) {
                 content = (e.originalEvent || e).clipboardData.getData('text/plain');
+                content = content.substring(0, remainLength);
                 document.execCommand('insertText', false, content);
             } else if (window.clipboardData) {
                 content = window.clipboardData.getData('Text');
+                content = content.substring(0, remainLength);
                 document.selection.createRange().pasteHTML(content);
             }
         };
@@ -536,6 +543,10 @@
         };
 
         var onKeyDown = function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                return;
+            }
+
             switch (e.keyCode) {
                 case KEY.ESC:
                     if (_mentions.isVisible()) {
@@ -560,15 +571,24 @@
                     if (_mentions.isVisible()) {
                         _mentions.select();
                         e.preventDefault();
+                        return;
                     }
-                    return;
+                    break;
                 case KEY.LEFT:
                 case KEY.RIGHT:
                 case KEY.HOME:
                 case KEY.END:
                 case KEY.PAGEUP:
                 case KEY.PAGEDOWN:
+                case KEY.DELETE:
+                case KEY.BACKSPACE:
                     return;
+            }
+
+            var length = getValue().length;
+            if (length > _maxLength) {
+                e.preventDefault();
+                return;
             }
 
             if (!window.getSelection) {
