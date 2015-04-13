@@ -185,7 +185,7 @@
         jaso: function(str) {
             return str.jaso();
         }
-    }
+    };
 
     var Mentions = function(mentions, callback) {
         var $mentionListView = $("<ul class='_mention_list'></ul>"),
@@ -387,7 +387,7 @@
             var mentions = _options.mentions || [],
                 value = _options.value || $field.val();
 
-            _maxLength = _options.maxLength || $field.attr("maxlength");
+            _maxLength = _options.maxLength || $field.attr("maxlength") || 1000;
 
             $editor.html(makeHtml(value));
             $editor.attr("class", $field.attr("class"));
