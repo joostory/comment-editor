@@ -361,7 +361,7 @@
 
 
     var Editor = function(field, options) {
-        var _field = $(field),
+        var $field = $(field),
             _options = options || {},
             $editor = $("<div contenteditable></div>"),
             $placeholder = $("<div class='editor_placeholder'></div>"),
@@ -372,7 +372,7 @@
                 _mentions.view().remove();
             }
             _mentions = Mentions(mentions, addMentionView);
-            _mentions.view().insertAfter(_field);
+            _mentions.view().insertAfter($field);
             _mentions.hide();
         };
 
@@ -384,17 +384,17 @@
 
         var init = function() {
             var mentions = _options.mentions? _options.mentions:[],
-                value = _options.value? _options.value:_field.val();
+                value = _options.value? _options.value:$field.val();
 
             $editor.html(makeHtml(value));
-            $editor.attr("class", _field.attr("class"));
-            $editor.insertBefore(_field);
+            $editor.attr("class", $field.attr("class"));
+            $editor.insertBefore($field);
 
-            $placeholder.html(_field.attr("placeholder"));
-            $placeholder.insertBefore(_field);
+            $placeholder.html($field.attr("placeholder"));
+            $placeholder.insertBefore($field);
             resetPlaceHolder();
 
-            _field.hide();
+            $field.hide();
 
             initMentions(mentions);
 
@@ -406,7 +406,7 @@
 
         var reset = function() {
             $editor.html("");
-            _field.val("");
+            $field.val("");
             resetPlaceHolder();
         };
 
