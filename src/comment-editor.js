@@ -580,8 +580,6 @@
                 case KEY.END:
                 case KEY.PAGEUP:
                 case KEY.PAGEDOWN:
-                case KEY.DELETE:
-                case KEY.BACKSPACE:
                     return;
             }
 
