@@ -20,22 +20,24 @@
 
 
     var util = {
-        findMentionTrigger: function() {
+        findMentionTrigger: function($editor) {
             var doc = document,
                 win = doc.defaultView || doc.parentWindow,
-                sel, range, cloneRange, node, text = "";
+                sel = win.getSelection(),
+                range, cloneRange, node, text = "",
+                rects, rect, x = 0, y = 0;
 
-            if (typeof win.getSelection != "undefined") {
-                sel = win.getSelection();
-                range = sel.getRangeAt(0);
-                cloneRange = range.cloneRange();
-                node = range.endContainer;
+            range = sel.getRangeAt(0);
+            cloneRange = range.cloneRange();
+            node = range.endContainer;
 
-                cloneRange.selectNodeContents(range.endContainer);
-                while (node.previousSibling != null && node.previousSibling.nodeType == 3) {
-                    node = node.previousSibling;
-                }
-                cloneRange.setStart(node, 0);
+            cloneRange.selectNodeContents(range.endContainer);
+            while (node != $editor && node.previousSibling != null && node.previousSibling.nodeType == 3) {
+                console.log(node, node.previousSibling);
+                node = node.previousSibling;
+            }
+            cloneRange.setStart(node, 0);
+            if (node.data) {
                 var lastIndex = node.data.search(/\s/);
                 if (lastIndex < 0 || lastIndex < range.endOffset) {
                     lastIndex = node.data.length;
@@ -45,99 +47,79 @@
                 } else {
                     cloneRange.setEnd(range.endContainer, range.endOffset);
                 }
-
-                text = cloneRange.toString();
-            } else if ( (sel = doc.selection) && sel.type != "Control") {
-                var textRange = sel.createRange();
-                var preCaretTextRange = doc.body.createTextRange();
-                preCaretTextRange.moveToElementText(element);
-                preCaretTextRange.setEndPoint("EndToEnd", textRange);
-                text = preCaretTextRange.text;
             }
+
+            text = cloneRange.toString();
 
             var triggerIndex = text.lastIndexOf('@');
             if (triggerIndex < 0) {
                 return { index: triggerIndex };
             } else {
-                return { index: triggerIndex, data: text.slice(triggerIndex+1, text.length) };
+
+                cloneRange.setStart(node, triggerIndex);
+                cloneRange.collapse(true);
+                rects = cloneRange.getClientRects();
+                if (rects.length > 0) {
+                    rect = cloneRange.getClientRects()[0];
+                    x = rect.left + win.pageXOffset;
+                    y = rect.top + win.pageYOffset;
+                }
+                return { index: triggerIndex, data: text.slice(triggerIndex+1, text.length), x:x, y:y };
             }
         },
         selectMention: function() {
             var doc = document,
                 win = doc.defaultView || doc.parentWindow,
-                sel, range, cloneRange, node;
+                sel = win.getSelection(),
+                range, cloneRange, node;
 
-            if (typeof win.getSelection != "undefined") {
-                sel = win.getSelection();
-                range = sel.getRangeAt(0);
-                cloneRange = range.cloneRange();
-                node = range.endContainer;
+            range = sel.getRangeAt(0);
+            cloneRange = range.cloneRange();
+            node = range.endContainer;
 
-                cloneRange.selectNodeContents(range.endContainer);
-                while (node.previousSibling != null && node.previousSibling.nodeType == 3 && node.data.search(/@/) < 0) {
-                    node = node.previousSibling;
-                }
-                cloneRange.setStart(node, node.data.lastIndexOf("@", range.endOffset));
-                var lastIndex = range.endContainer.data.search(/\s/);
-                if (lastIndex < 0 || lastIndex < range.endOffset) {
-                    lastIndex = range.endContainer.data.length;
-                }
-                if (lastIndex > range.endOffset) {
-                    cloneRange.setEnd(range.endContainer, lastIndex);
-                } else {
-                    cloneRange.setEnd(range.endContainer, range.endOffset);
-                }
-                sel.addRange(cloneRange);
-            } else if ( (sel = doc.selection) && sel.type != "Control") {
-                var textRange = sel.createRange();
-                var preCaretTextRange = doc.body.createTextRange();
-                preCaretTextRange.moveToElementText(element);
-                preCaretTextRange.setEndPoint("EndToEnd", textRange);
-                preCaretTextRange.select();
+            cloneRange.selectNodeContents(range.endContainer);
+            while (node.previousSibling != null && node.previousSibling.nodeType == 3 && node.data.search(/@/) < 0) {
+                node = node.previousSibling;
             }
+            cloneRange.setStart(node, node.data.lastIndexOf("@", range.endOffset));
+            var lastIndex = range.endContainer.data.search(/\s/);
+            if (lastIndex < 0 || lastIndex < range.endOffset) {
+                lastIndex = range.endContainer.data.length;
+            }
+            if (lastIndex > range.endOffset) {
+                cloneRange.setEnd(range.endContainer, lastIndex);
+            } else {
+                cloneRange.setEnd(range.endContainer, range.endOffset);
+            }
+            sel.addRange(cloneRange);
         },
         getCaretPosition: function(element) {
-            var caretOffset = 0;
-            var doc = element.ownerDocument || element.document;
-            var win = doc.defaultView || doc.parentWindow;
-            var sel;
-            if (typeof win.getSelection != "undefined") {
+            var caretOffset = 0,
+                doc = element.ownerDocument || element.document,
+                win = doc.defaultView || doc.parentWindow,
                 sel = win.getSelection();
-                if (sel.rangeCount > 0) {
-                    var range = win.getSelection().getRangeAt(0);
-                    var preCaretRange = range.cloneRange();
-                    preCaretRange.selectNodeContents(element);
-                    preCaretRange.setEnd(range.endContainer, range.endOffset);
-                    caretOffset = preCaretRange.toString().length;
-                }
-            } else if ( (sel = doc.selection) && sel.type != "Control") {
-                var textRange = sel.createRange();
-                var preCaretTextRange = doc.body.createTextRange();
-                preCaretTextRange.moveToElementText(element);
-                preCaretTextRange.setEndPoint("EndToEnd", textRange);
-                caretOffset = preCaretTextRange.text.length;
+
+            if (sel.rangeCount > 0) {
+                var range = sel.getRangeAt(0);
+                var preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents(element);
+                preCaretRange.setEnd(range.endContainer, range.endOffset);
+                caretOffset = preCaretRange.toString().length;
             }
             return caretOffset;
         },
         moveCaret: function(node, isStart){
-            var sel, range;
-            if (window.getSelection) {
+            var sel = window.getSelection(),
                 range = document.createRange();
-                range.selectNodeContents(node);
-                if (isStart) {
-                    range.setStart(node, 0);
-                    range.setEnd(node, 0);
-                }
-                range.collapse(false);
-                sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-            } else if (document.selection) {
-                range = document.body.createTextRange();
-                range.moveToElementText(node);
-                range.collapse(false);
-                range.select();
+
+            range.selectNodeContents(node);
+            if (isStart) {
+                range.setStart(node, 0);
+                range.setEnd(node, 0);
             }
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
         },
         moveCaretBefore: function(node) {
             var focusNode = document.createTextNode(" ");
@@ -150,30 +132,35 @@
             util.moveCaret(focusNode, false);
         },
         insertNodeOverSelection: function(node, containerNode) {
-            var sel, range, html;
-            if (window.getSelection) {
-                sel = window.getSelection();
-                if (sel.getRangeAt && sel.rangeCount) {
-                    range = sel.getRangeAt(0);
+            var sel = window.getSelection(),
+                range, html;
 
-                    if ($.contains(containerNode[0], range.commonAncestorContainer)) {
-                        range.deleteContents();
-                        range.insertNode(node);
-                    } else {
-                        containerNode.append(node);
-                    }
-                }
-            } else if (document.selection && document.selection.createRange) {
-                range = document.selection.createRange();
-                if ($.contains(containerNode[0], range.parentElement())) {
-                    html = (node.nodeType == 3) ? node.data : node.outerHTML;
-                    range.pasteHTML(html);
+            if (sel.getRangeAt && sel.rangeCount) {
+                range = sel.getRangeAt(0);
+
+                if ($.contains(containerNode[0], range.commonAncestorContainer)) {
+                    range.deleteContents();
+                    range.insertNode(node);
                 } else {
                     containerNode.append(node);
                 }
             }
 
             util.moveCaretAfter(node);
+        },
+        getParentPosition: function(dom) {
+            var body = document.body,
+                $dom = $(dom),
+                pos, x = 0, y = 0;
+
+            if (!$dom.is($dom.offsetParent())) {
+                $dom = $dom.offsetParent();
+                pos = $dom.offset();
+                x += pos.left;
+                y += pos.top;
+            }
+
+            return {x:x, y:y};
         },
         trim: function(str) {
             if (str.trim) {
@@ -253,7 +240,7 @@
             hideList();
         };
 
-        var search = function(word, addedCollection) {
+        var search = function(word, addedCollection, options) {
             var i, mention, result=[];
 
             word = word? util.trim(word) : "";
@@ -278,14 +265,16 @@
             }
 
             if (result.length > 0) {
-                showList(result);
+                showList(result, options);
             } else {
                 hideList();
             }
 
         };
 
-        var showList = function(result) {
+        var showList = function(result, options) {
+            console.log(options);
+
             var i, view;
             $mentionListView.empty();
             _searchedMentionViews = [];
@@ -297,6 +286,17 @@
 
             selectItem(0);
             $mentionListView.show();
+
+            if (options) {
+                var parentPosition = util.getParentPosition($mentionListView),
+                    x = options.x - parentPosition.x,
+                    y = options.y - parentPosition.y;
+
+                $mentionListView.css({
+                    "left": x + "px",
+                    "top": y + "px"
+                });
+            }
         };
 
         var selectItem = function(index) {
@@ -350,8 +350,8 @@
             hide: function() {
                 hideList();
             },
-            search: function(word, addedCollection) {
-                search(word, addedCollection || {});
+            search: function(word, addedCollection, options) {
+                search(word, addedCollection || {}, options);
             },
 			add: function(mention, isDefault) {
 				add(mention, isDefault);
@@ -363,36 +363,46 @@
     var Editor = function(field, options) {
         var $field = $(field),
             _options = options || {},
-            $editor = $("<div contenteditable></div>"),
-            $placeholder = $("<div class='editor_placeholder'></div>"),
+            $editor,
+            $placeholder,
             _maxLength,
             _mentions = null;
 
         var initMentions = function(mentions) {
-            if (_mentions) {
-                _mentions.view().remove();
+            if ($editor) {
+                if (_mentions) {
+                    _mentions.view().remove();
+                }
+                _mentions = Mentions(mentions, addMentionView);
+                $field.parent().parent().append(_mentions.view());
+                _mentions.hide();
             }
-            _mentions = Mentions(mentions, addMentionView);
-            _mentions.view().insertAfter($field);
-            _mentions.hide();
         };
 
 		var addMention = function(mention, isDefault) {
-			if (_mentions) {
-				_mentions.add(mention, isDefault);
-			}
+            if ($editor) {
+    			if (_mentions) {
+    				_mentions.add(mention, isDefault);
+    			}
+            }
 		};
 
         var init = function() {
+            if (typeof window.getSelection == "undefined") {
+                return;
+            }
+
             var mentions = _options.mentions || [],
                 value = _options.value || $field.val();
 
             _maxLength = _options.maxLength || $field.attr("maxlength") || 1000;
 
+            $editor = $("<div contenteditable></div>");
             $editor.html(makeHtml(value));
             $editor.attr("class", $field.attr("class"));
             $editor.insertBefore($field);
 
+            $placeholder = $("<div class='editor_placeholder'></div>");
             $placeholder.html($field.attr("placeholder"));
             $placeholder.insertBefore($field);
             resetPlaceHolder();
@@ -408,9 +418,12 @@
         };
 
         var reset = function() {
-            $editor.html("");
-            $field.val("");
-            resetPlaceHolder();
+            if ($editor) {
+                $editor.html("");
+                resetPlaceHolder();
+            } else {
+                $field.val("");
+            }
         };
 
         var resetPlaceHolder = function() {
@@ -418,6 +431,14 @@
                 $placeholder.hide();
             } else {
                 $placeholder.show();
+            }
+        };
+
+        var focus = function() {
+            if ($editor) {
+                $editor.focus();
+            } else {
+                $field.focus();
             }
         };
 
@@ -435,18 +456,32 @@
                 return;
             }
 
-            var addedCollection = {};
+            var word = data.data,
+                addedCollection = {},
+                mentionOptions;
+
             $editor.find("span[data-id]").each(function() {
                 var elm = $(this);
                 addedCollection[elm.data("id")] = elm.text();
             });
 
-            _mentions.search(data.data, addedCollection);
+            if (_options.floatMention) {
+                mentionOptions = {
+                    x: data.x,
+                    y: data.y + 20
+                };
+            }
+
+            _mentions.search(word, addedCollection, mentionOptions);
         };
 
 
         var getValue = function() {
-            return _getTextValue($editor);
+            if ($editor) {
+                return _getTextValue($editor);
+            } else {
+                return $field.val();
+            }
         };
 
         var _getTextValue = function(dom) {
@@ -494,10 +529,12 @@
 
         var getAddedMentions = function() {
             var added = [];
-            $editor.find("span[data-id]").each(function() {
-                var elm = $(this);
-                added.push({id:elm.data("id"), name:elm.text()});
-            });
+            if ($editor) {
+                $editor.find("span[data-id]").each(function() {
+                    var elm = $(this);
+                    added.push({id:elm.data("id"), name:elm.text()});
+                });
+            }
             return added;
         };
 
@@ -538,7 +575,7 @@
                 case KEY.RETURN:
                     return;
             }
-            searchMention(util.findMentionTrigger());
+            searchMention(util.findMentionTrigger($editor));
             resetPlaceHolder();
         };
 
@@ -589,9 +626,6 @@
                 return;
             }
 
-            if (!window.getSelection) {
-                return;
-            }
             var node = window.getSelection().anchorNode;
             node = (node.nodeType == 3)? node.parentNode:node;
 
@@ -635,7 +669,7 @@
                 reset();
             },
             focus: function() {
-                $editor.focus();
+                focus();
             }
         }
     };
